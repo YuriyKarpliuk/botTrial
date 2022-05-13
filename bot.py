@@ -1,19 +1,28 @@
 import telebot
 import config
-import sqlite3
 from telebot import types
-import database
-
+import psycopg2
+from config import host, user, password, db_name
 bot = telebot.TeleBot(config.token)
 
-con = sqlite3.connect("database.db", check_same_thread=False)
-c = con.cursor()
+try:
+    con = psycopg2.connect(
+        host=host,
+        user=user,
+        password=password,
+        database=db_name
+    )
+
+    c = con.cursor()
+
+except Exception as ex:
+    print("[INFO] Error while working with PostgreSQL", ex)
 
 
 def db_user_table_create():
     c.execute("""CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL NOT NULL ,
+                id SERIAL PRIMARY KEY,
+                user_id BIGINT NOT NULL NOT NULL ,
                 first_name TEXT NOT NULL,
                 last_name TEXT  NOT NULL,
                 username TEXT NOT NULL,
@@ -23,7 +32,7 @@ def db_user_table_create():
 
 def db_timetable_table_create():
     c.execute("""CREATE TABLE IF NOT EXISTS timetable (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 user_id INTEGER NOT NULL,
                 day_of_week TEXT NOT NULL,
                 week TEXT  NOT NULL,
@@ -35,7 +44,7 @@ def db_timetable_table_create():
 
 def db_event_table_create():
     c.execute("""CREATE TABLE IF NOT EXISTS event (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 timetable_id INTEGER NOT NULL,
                 start_time TEXT NOT NULL,
                 end_time TEXT  NOT NULL,
@@ -50,7 +59,7 @@ db_event_table_create()
 
 
 def save_info(id: int, first_name: str, last_name: str, username: str, position_name: str):
-    c.execute('INSERT INTO users (user_id, first_name, last_name, username, position_name) VALUES (?, ?, ?, ?, ?)',
+    c.execute('INSERT INTO users (user_id, first_name, last_name, username, position_name) VALUES (%s, %s, %s, %s, %s)',
               (id, first_name, last_name, username, position_name,))
     con.commit()
 
@@ -91,7 +100,7 @@ def user_choice3(message):
 
 
 def user_info(message):
-    c.execute('SELECT first_name, last_name, position_name FROM users WHERE user_id = ?', (message.from_user.id,))
+    c.execute('SELECT first_name, last_name, position_name FROM users WHERE user_id = %s', (message.from_user.id,))
     con.commit()
     sql = c.fetchone()
     mylist = list()
@@ -135,7 +144,6 @@ def add_timetable_user(message):
     check_if_user_exist(u_id)
     if c.fetchone() == None:
         bot.send_message(message.chat.id, "There is no user with such id")
-    else:
 
 def first_name(message):
     global id
@@ -173,12 +181,12 @@ def success(message):
 
 
 def check_if_user_exist(u_id: int):
-    c.execute('SELECT * FROM users WHERE user_id = ?', (u_id,))
+    c.execute('SELECT * FROM users WHERE user_id = %s', (u_id,))
     con.commit()
 
 
 def delete(u_id: int):
-    c.execute('DELETE FROM users WHERE user_id = ?', (u_id,))
+    c.execute('DELETE FROM users WHERE user_id = %s', (u_id,))
     con.commit()
 
 
@@ -194,7 +202,7 @@ def delete_user(message):
 
 
 def update_first_name(u_id: int, new_fs: str):
-    c.execute('UPDATE users SET first_name =? WHERE user_id = ?', (new_fs, u_id,))
+    c.execute('UPDATE users SET first_name = %s WHERE user_id = %s', (new_fs, u_id,))
     con.commit()
 
 
@@ -206,7 +214,7 @@ def new_first_name(message):
 
 
 def update_last_name(u_id: int, new_ls: str):
-    c.execute('UPDATE users SET last_name =? WHERE user_id = ?', (new_ls, u_id,))
+    c.execute('UPDATE users SET last_name = %s WHERE user_id = %s', (new_ls, u_id,))
     con.commit()
 
 
@@ -218,7 +226,7 @@ def new_last_name(message):
 
 
 def update_username(u_id: int, new_un: str):
-    c.execute('UPDATE users SET username =? WHERE user_id = ?', (new_un, u_id,))
+    c.execute('UPDATE users SET username = %s WHERE user_id = %s', (new_un, u_id,))
     con.commit()
 
 
@@ -230,7 +238,7 @@ def new_username(message):
 
 
 def update_position(u_id: int, new_pos: str):
-    c.execute('UPDATE users SET position_name =? WHERE user_id = ?', (new_pos, u_id,))
+    c.execute('UPDATE users SET position_name = %s WHERE user_id = %s', (new_pos, u_id,))
     con.commit()
 
 
