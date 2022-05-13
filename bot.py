@@ -2,7 +2,7 @@ import telebot
 import config
 from telebot import types
 import psycopg2
-from config import host, user, password, db_name
+from config import host, user, password, db_name, uri
 bot = telebot.TeleBot(config.token)
 
 try:
@@ -10,7 +10,8 @@ try:
         host=host,
         user=user,
         password=password,
-        database=db_name
+        database=db_name,
+        uri=uri
     )
 
     c = con.cursor()
